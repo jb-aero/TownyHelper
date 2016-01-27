@@ -1,10 +1,4 @@
-package com.zeoldcraft;
-
-import java.util.List;
-
-import org.bukkit.Bukkit;
-import org.bukkit.Location;
-import org.bukkit.entity.Player;
+package io.github.jbaero.chtowny;
 
 import com.laytonsmith.PureUtilities.Version;
 import com.laytonsmith.abstraction.MCLocation;
@@ -23,9 +17,11 @@ import com.laytonsmith.core.constructs.CString;
 import com.laytonsmith.core.constructs.Construct;
 import com.laytonsmith.core.constructs.Target;
 import com.laytonsmith.core.environments.Environment;
+import com.laytonsmith.core.exceptions.CRE.CREInvalidPluginException;
+import com.laytonsmith.core.exceptions.CRE.CREPluginInternalException;
+import com.laytonsmith.core.exceptions.CRE.CREThrowable;
 import com.laytonsmith.core.exceptions.ConfigRuntimeException;
 import com.laytonsmith.core.functions.AbstractFunction;
-import com.laytonsmith.core.functions.Exceptions.ExceptionType;
 import com.palmergames.bukkit.towny.Towny;
 import com.palmergames.bukkit.towny.db.TownyDataSource;
 import com.palmergames.bukkit.towny.exceptions.NotRegisteredException;
@@ -33,10 +29,15 @@ import com.palmergames.bukkit.towny.exceptions.TownyException;
 import com.palmergames.bukkit.towny.object.Resident;
 import com.palmergames.bukkit.towny.object.Town;
 import com.palmergames.bukkit.towny.object.TownBlock;
-import com.palmergames.bukkit.towny.object.TownyUniverse;
 import com.palmergames.bukkit.towny.object.TownyPermission.ActionType;
+import com.palmergames.bukkit.towny.object.TownyUniverse;
 import com.palmergames.bukkit.towny.object.TownyWorld;
 import com.palmergames.bukkit.towny.utils.PlayerCacheUtil;
+import org.bukkit.Bukkit;
+import org.bukkit.Location;
+import org.bukkit.entity.Player;
+
+import java.util.List;
 
 public class CHTowny {
 
@@ -50,7 +51,7 @@ public class CHTowny {
 		if (twny.isInstanceOf(Towny.class)) {
 			return (Towny) twny.getHandle();
 		} else {
-			throw new ConfigRuntimeException("Plugin named Towny was not Towny", ExceptionType.InvalidPluginException, t);
+			throw new CREInvalidPluginException("Plugin named Towny was not Towny", t);
 		}
 	}
 	
@@ -63,14 +64,14 @@ public class CHTowny {
 		try {
 			return getTownyData(t).getResident(name);
 		} catch (NotRegisteredException nre) {
-			throw new ConfigRuntimeException("Unknown resident " + name, ExceptionType.PluginInternalException, t);
+			throw new CREPluginInternalException("Unknown resident " + name, t);
 		}
 	}
 	
 	public abstract static class TownyFunction extends AbstractFunction {
 
-		public ExceptionType[] thrown() {
-			return new ExceptionType[]{ExceptionType.InvalidPluginException};
+		public Class<? extends CREThrowable>[] thrown() {
+			return new Class[]{CREInvalidPluginException.class};
 		}
 
 		public boolean isRestricted() {
@@ -98,26 +99,26 @@ public class CHTowny {
 		atown.set("mayor", new CString(town.getMayor().getName(), t), t);
 		CArray assis = new CArray(t);
 		for (Resident res : town.getAssistants()) {
-			assis.push(new CString(res.getName(), t));
+			assis.push(new CString(res.getName(), t), t);
 		}
 		atown.set("assistants", assis, t);
 		CArray resis = new CArray(t);
 		for (Resident res : town.getResidents()) {
-			assis.push(new CString(res.getName(), t));
+			assis.push(new CString(res.getName(), t), t);
 		}
 		atown.set("residents", resis, t);
 		Construct nation;
 		try {
 			nation = new CString(town.getNation().getName(), t);
 		} catch (NotRegisteredException nre) {
-			nation = new CNull(t);
+			nation = CNull.NULL;
 		}
 		atown.set("nation", nation, t);
 		Construct spawn;
 		try {
 			spawn = ObjectGenerator.GetGenerator().location(new BukkitMCLocation(town.getSpawn()));
 		} catch (TownyException e) {
-			spawn = new CNull(t);
+			spawn = CNull.NULL;
 		}
 		atown.set("spawn", spawn, t);	
 		return town_array;
@@ -133,9 +134,9 @@ public class CHTowny {
 	
 	public static CArray chunk_array(TownBlock block, Target t) {
 		CArray chunkArray = new CArray(t);
-		chunkArray.push(new CInt(block.getX(), t));
-		chunkArray.push(new CInt(block.getZ(), t));
-		chunkArray.push(new CString(block.getWorld().getName(), t));
+		chunkArray.push(new CInt(block.getX(), t), t);
+		chunkArray.push(new CInt(block.getZ(), t), t);
+		chunkArray.push(new CString(block.getWorld().getName(), t), t);
 		return chunkArray;
 	}
 
@@ -174,12 +175,12 @@ public class CHTowny {
 					try {
 						return new CString(blocks.get(i).getTown().getName(), t);
 					} catch (NotRegisteredException e) {
-						return new CNull(t);
+						return CNull.NULL;
 					}
 				}
 			}
 
-			return new CNull(t);
+			return CNull.NULL;
 		}
 
 		public Integer[] numArgs() {
@@ -211,7 +212,7 @@ public class CHTowny {
 			CArray chunks = new CArray(t);
 			
 			for(TownBlock block: town.getTownBlocks()) {
-				chunks.push(chunk_array(block, t));
+				chunks.push(chunk_array(block, t), t);
 			}
 			
 			return chunks;
@@ -241,7 +242,7 @@ public class CHTowny {
 	public static class towny_canbuild extends TownyFunction {
 
 		public Construct exec(Target t, Environment environment, Construct... args) throws ConfigRuntimeException {
-			return new CBoolean(construct(args[0], args[1], ActionType.BUILD, t), t);
+			return CBoolean.get(construct(args[0], args[1], ActionType.BUILD, t));
 		}
 
 		public Integer[] numArgs() {
@@ -257,7 +258,7 @@ public class CHTowny {
 	public static class towny_canbreak extends TownyFunction {
 
 		public Construct exec(Target t, Environment environment, Construct... args) throws ConfigRuntimeException {
-			return new CBoolean(construct(args[0], args[1], ActionType.DESTROY, t), t);
+			return CBoolean.get(construct(args[0], args[1], ActionType.DESTROY, t));
 		}
 
 		public Integer[] numArgs() {

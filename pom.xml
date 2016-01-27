@@ -2,7 +2,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.zeoldcraft</groupId>
   <artifactId>TownyHelper</artifactId>
-  <version>0.0.1-SNAPSHOT</version>
+    <version>0.0.3</version>
   <name>TownyHelper</name>
   <description>A Towny-Hooking extension for CommandHelper</description>
       <repositories>
@@ -35,7 +35,7 @@
         <dependency>
             <groupId>com.sk89q</groupId>
             <artifactId>commandhelper</artifactId>
-            <version>3.3.1-SNAPSHOT</version>
+            <version>3.3.2-SNAPSHOT</version>
             <type>jar</type>
         </dependency>
     </dependencies>
